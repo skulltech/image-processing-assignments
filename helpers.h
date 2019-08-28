@@ -7,6 +7,14 @@ using namespace std;
 using namespace cimg_library;
 
 
+// Pads an image so that in each dimension it's 2^N in length, so that FFT can be applied on it.
+template <typename T>
+CImg<T> pad(CImg<T> image) {
+    int hd = log2(image.height())
+    auto padded = CImg<T>(greater, greater, 1, 1);
+    return padded;
+}
+
 // Class used to get luminance from RGB and vice versa.
 class Luminance { 
     public: 
@@ -97,38 +105,43 @@ class LogLuminance {
     }
 };  
 
+
 // Returns a pair containing the lowest value and highest value in the image.
 template <typename T>
 pair<T, T> dynamicRange(CImg<T> image) {
-    T mx = 0, mn = 1000;
+    double mx = -1 * INFINITY, mn = INFINITY;
+    pair<T, T> mnmx;
+    
     for (int j = 0; j < image.height(); j++) {
         for (int i = 0; i < image.width(); i++) {
             for (int k = 0; k < image.spectrum(); k++) {
-                // pair<T, T> mnmx = min({*image.data(i, j, 0, k), mn, mx});
-                mn = min(*image.data(i, j, 0, k), mn);
-                mx = max(*image.data(i, j, 0, k), mx);
+                mnmx = minmax({*image.data(i, j, 0, k), mnmx.first, mnmx.second});
             }
         }
     }
-    return make_pair(mn, mx);
+    return mnmx;
 }
 
-CImg<unsigned short> gammaCorrection(CImg<unsigned short int> image) {
-    CImg<unsigned short> corrected(image.width(), image.height(), 1, image.spectrum());
-    unsigned short int colors[image.spectrum()];
+
+// Gamma correction with gamma value of 2.2.
+template <typename T>
+CImg<T> gammaCorrection(CImg<T> image) {
+    CImg<T> corrected(image.width(), image.height(), 1, image.spectrum());
+    T colors[image.spectrum()];
 
     for (int j = 0; j < image.height(); j++) {
         for (int i = 0; i < image.width(); i++) {
             for (int k = 0; k < image.spectrum(); k++) {
-                int orig = *image.data(i, j, 0, k);
+                T orig = *image.data(i, j, 0, k);
                 double crct = pow(orig, (1/2.2));
-                colors[k] = (int) (crct * 255);
+                colors[k] = (T) (crct * 255);
             }
             corrected.draw_point(i, j, 0, colors);
         }
     }
     return corrected;
 }
+
 
 // Linearly scales a given image containing a single channel in a given range.
 template <typename T>
@@ -148,6 +161,7 @@ CImg<double> linearScaling(CImg<T> image, int range) {
     return scaled;
 }
 
+
 // Takes luminance image and returns log-average luminance as defined in Reinhard Et Al.
 template <typename T>
 double logAverageLuminance(CImg<T> image) {
@@ -160,4 +174,14 @@ double logAverageLuminance(CImg<T> image) {
     }
     int pixelCount = image.height() * image.width();
     return exp(logSum / pixelCount);;
+}
+
+
+// Displays an image and waits till the window is closed by user.
+template <typename T>
+void displayImage(CImg<T> image) {
+    auto display = CImgDisplay(image, "Image Display");
+    while (!display.is_closed()) {
+        display.wait();
+    }
 }
