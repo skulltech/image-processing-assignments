@@ -18,14 +18,8 @@ const int kernelLength = 101;
 
 
 CImg<double> convolution(CImg<double> image1, CImg<double> image2) {
-    cout << "Here" << endl;
     CImgList<double> freqImage1 = image1.get_FFT();
     CImgList<double> freqImage2 = image2.get_FFT();
-    
-    cout << freqImage1.at(0).width() << " " << freqImage1.at(0).height() << endl;
-    cout << freqImage2.at(0).width() << " " << freqImage2.at(0).height() << endl;
-    // auto cimage1 = CImg<complex<double>>(freqImage1.at(0).width(), freqImage1.at(0).height(), 1, 1);
-    // auto cimage2 = CImg<complex<double>>(freqImage2.at(0).width(), freqImage2.at(0).height(), 1, 1);
 }
 
 template <typename T>
@@ -60,15 +54,6 @@ CImg<unsigned char> reinhard(CImg<unsigned char> hdrImage) {
 }
 
 int main(int argc, char *argv[]) {
-    // cout << "Start" << endl;
-    CImg<float> image(argv[1]);
-    // cout << image.height() << " " << image.width() << endl;
-    // displayImage(image);
-    // auto ret = reinhard(image);
-    const CImg<unsigned char> img = image.RGBtoYCbCr().channel(0).resize(256,256);
-    cout << img.width() << " " << img.height() << " " << img.spectrum() << " " << img.depth() << endl;
-    CImgList<float> F = img.get_FFT();
-    cout << F.at(0).width() << " " << F.at(0).height() << " " << F.at(0).spectrum() << " " << F.at(0).depth() << endl;
-    
+    CImg<float> image(argv[1]);    
     return 0;
 }

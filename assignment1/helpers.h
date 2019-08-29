@@ -7,26 +7,19 @@ using namespace std;
 using namespace cimg_library;
 
 
-// Pads an image so that in each dimension it's 2^N in length, so that FFT can be applied on it.
-template <typename T>
-CImg<T> pad(CImg<T> image) {
-    int hd = log2(image.height())
-    auto padded = CImg<T>(greater, greater, 1, 1);
-    return padded;
-}
-
 // Class used to get luminance from RGB and vice versa.
+template <typename T>
 class Luminance { 
     public: 
-    CImg<unsigned short> originalImage, luminanceImage;
-    CImg<float> ratioImage;
+    CImg<T> originalImage, luminanceImage;
+    CImg<double> ratioImage;
 
-    CImg<unsigned short> convert(CImg<unsigned short> image) {
+    CImg<T> convert(CImg<T> image) {
         originalImage = image;
-        luminanceImage = CImg<unsigned short>(originalImage.width(), originalImage.height(), 1, 1);
-        ratioImage = CImg<float>(originalImage.width(), originalImage.height(), 1, 3);
-        unsigned short lumnc[1];
-        float ratio[3];
+        luminanceImage = CImg<T>(originalImage.width(), originalImage.height(), 1, 1);
+        ratioImage = CImg<double>(originalImage.width(), originalImage.height(), 1, 3);
+        T lumnc[1];
+        double ratio[3];
 
         for (int j = 0; j < originalImage.height(); j++) {
             for (int i = 0; i < originalImage.width(); i++) {
@@ -41,14 +34,14 @@ class Luminance {
         return luminanceImage;
     }
 
-    CImg<unsigned short int> restore(CImg<unsigned short> image) {
+    CImg<T> restore(CImg<T> image) {
         luminanceImage = image;
-        CImg<unsigned short> restored(luminanceImage.width(), luminanceImage.height(), 1, 3);
-        unsigned short colors[3];
+        CImg<T> restored(luminanceImage.width(), luminanceImage.height(), 1, 3);
+        T colors[3];
 
         for (int j = 0; j < luminanceImage.height(); j++) {
             for (int i = 0; i < luminanceImage.width(); i++) {
-                float luminance = *luminanceImage.data(i, j, 0, 0);
+                T luminance = *luminanceImage.data(i, j, 0, 0);
                 colors[0] = *ratioImage.data(i, j, 0, 0) * luminance;
                 colors[1] = *ratioImage.data(i, j, 0, 1) * luminance;
                 colors[2] = *ratioImage.data(i, j, 0, 2) * luminance;
@@ -61,21 +54,22 @@ class Luminance {
 
 
 // class used to get logLuminance from RGB and vice versa.
+template <typename T>
 class LogLuminance { 
     public: 
-    CImg<unsigned short int> hdrImage, llImage;
-    CImg<float> ratioImage;
+    CImg<T> hdrImage, llImage;
+    CImg<double> ratioImage;
 
-    CImg<unsigned short int> convert(CImg<unsigned int> image) {
+    CImg<T> convert(CImg<T> image) {
         hdrImage = image;
-        llImage = CImg<unsigned int>(hdrImage.width(), hdrImage.height(), 1, 1);
-        ratioImage = CImg<float>(hdrImage.width(), hdrImage.height(), 1, 3);
-        unsigned short logLumnc[1];
-        float ratio[3];
+        llImage = CImg<T>(hdrImage.width(), hdrImage.height(), 1, 1);
+        ratioImage = CImg<double>(hdrImage.width(), hdrImage.height(), 1, 3);
+        T logLumnc[1];
+        double ratio[3];
 
         for (int j = 0; j < hdrImage.height(); j++) {
             for (int i = 0; i < hdrImage.width(); i++) {
-                float luminance = *hdrImage.data(i, j, 0, 0)*0.299 + *hdrImage.data(i, j, 0, 1)*0.587 + *hdrImage.data(i, j, 0, 1)*0.114;
+                double luminance = *hdrImage.data(i, j, 0, 0)*0.299 + *hdrImage.data(i, j, 0, 1)*0.587 + *hdrImage.data(i, j, 0, 1)*0.114;
                 logLumnc[0] = log(luminance);
                 ratio[0] = *hdrImage.data(i, j, 0, 0) / luminance;
                 ratio[1] = *hdrImage.data(i, j, 0, 1) / luminance;
@@ -87,14 +81,14 @@ class LogLuminance {
         return llImage;
     }
 
-    CImg<unsigned short> restore(CImg<unsigned short> image) {
+    CImg<T> restore(CImg<T> image) {
         llImage = image;
-        CImg<unsigned short> restored(llImage.width(), llImage.height(), 1, 3);
-        unsigned short colors[3];
+        CImg<T> restored(llImage.width(), llImage.height(), 1, 3);
+        T colors[3];
 
         for (int j = 0; j < llImage.height(); j++) {
             for (int i = 0; i < llImage.width(); i++) {
-                float luminance = exp(*llImage.data(i, j, 0, 0));
+                double luminance = exp(*llImage.data(i, j, 0, 0));
                 colors[0] = *ratioImage.data(i, j, 0, 0) * luminance;
                 colors[1] = *ratioImage.data(i, j, 0, 1) * luminance;
                 colors[2] = *ratioImage.data(i, j, 0, 2) * luminance;
@@ -180,7 +174,7 @@ double logAverageLuminance(CImg<T> image) {
 // Displays an image and waits till the window is closed by user.
 template <typename T>
 void displayImage(CImg<T> image) {
-    auto display = CImgDisplay(image, "Image Display");
+    auto display = CImgDisplay(image, "Image");
     while (!display.is_closed()) {
         display.wait();
     }
