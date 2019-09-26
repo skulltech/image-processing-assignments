@@ -29,8 +29,7 @@ def driver(args):
     
     image = cv2.imread(args.input_image, 0)
     noisy = noise_functions[args.noise_type](image, args.noise_param)
-    # denoised = non_local_means(image, args.h)
-    denoised = image
+    denoised = non_local_means(image, args.h)
     cv2.imwrite('nlmeans_'+ args.input_image.split('/')[-1], np.hstack((image, noisy, denoised)))
 
     print('[*] Time elapsed:', time.time() - start)
