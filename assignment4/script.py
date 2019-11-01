@@ -59,11 +59,11 @@ def get_rectangles(thresh, image, mask, p1, p2, a1, a2):
     canvas = image.copy()
     for c in cnts:
         peri = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-        if len(approx) == 4 and cv2.contourArea(approx) > p1 and cv2.contourArea(approx) < p1:
+        approx = cv2.approxPolyDP(c, 0.01 * peri, True)
+        if len(approx) == 4:
             (x, y, w, h) = cv2.boundingRect(approx)
             ar = w / float(h)
-            if ar > a1 and ar < a2:
+            if ar > a1 and ar < a2 and w*h > p1 and w*h < p2:
                 cv2.rectangle(canvas, (x, y), (x+w, y+h), (0, 255, 0), 1)
                 cv2.rectangle(mask, (x, y), (x+w, y+h), (255, 255, 255), -1)
     return canvas, mask
@@ -77,15 +77,13 @@ def cca(thresh, image, mask, p1, p2, a1, a2):
             continue
         labelMask = np.zeros(thresh.shape, dtype='uint8')
         labelMask[labels == label] = 255
-        numPixels = cv2.countNonZero(labelMask)
-        if numPixels > p1 and numPixels < p2:
-            cnts, hierarchy = cv2.findContours(labelMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            for c in cnts:
-                (x, y, w, h) = cv2.boundingRect(c)
-                ar = w / float(h)
-                if ar > a1 and ar < a2:
-                    cv2.rectangle(canvas, (x, y), (x+w, y+h), (0, 255, 0), 1)
-                    cv2.rectangle(mask, (x, y), (x+w, y+h), (255, 255, 255), -1)
+        cnts, hierarchy = cv2.findContours(labelMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        for c in cnts:
+            (x, y, w, h) = cv2.boundingRect(c)
+            ar = w / float(h)
+            if ar > a1 and ar < a2 and w*h > p1 and w*h < p2:
+                cv2.rectangle(canvas, (x, y), (x+w, y+h), (0, 255, 0), 1)
+                cv2.rectangle(mask, (x, y), (x+w, y+h), (255, 255, 255), -1)
     return canvas, mask
 
 
@@ -102,16 +100,18 @@ def __segment(image):
     blurred = cv2.GaussianBlur(monochrome, (3, 3), 0)
     P1, P2, A1, A2 = 1000, 10000, 1.2, 5
 
-    thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 31, 1)
+    thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 51, 1)
     canvas, mask = get_rectangles(thresh, image, mask, P1, P2, A1, A2)
 
     opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=2)
     canvas, mask = get_rectangles(opening, canvas, mask, P1, P2, A1, A2)
+    display(canvas)
 
     gradient = cv2.morphologyEx(thresh, cv2.MORPH_GRADIENT, kernel, iterations=1)
     canvas, mask = get_rectangles(gradient, canvas, mask, P1, P2, A1, A2)
+    display(canvas)
 
-    canvas, mask = cca(thresh, canvas, mask, P1, P2, A1, A2)
+    # canvas, mask = cca(thresh, canvas, mask, P1, P2, A1, A2)
     return canvas, mask
 
 
@@ -128,18 +128,18 @@ def detect(image):
     image = cv2.imread(image)
     image = cv2.resize(image, (1000, 1000))
     image = __deskew(image)
+    kernel = np.ones((3, 3), np.uint8)
     monochrome = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     display(image)
 
     blurred = cv2.GaussianBlur(monochrome, (3, 3), 0)
-    thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 31, 40)
-    # display(thresh)
+    thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 30)
 
     canvas, mask = __segment(image)
     roi = cv2.bitwise_and(thresh, mask)
-    # display(roi)
+    roi = cv2.dilate(roi, kernel)
 
-    canvas, mask = cca(thresh, image, mask, 70, 200, 0.2, 5)
+    canvas, mask = cca(roi, image, mask, 100, 500, 0.2, 1)
     display(canvas)
 
 
@@ -160,9 +160,9 @@ def main():
         sys.exit(1)
     args = vars(parser.parse_args())
     if args['all']:
-        for subdir, dirs, files in os.walk('all-images/'):
+        for subdir, dirs, files in os.walk(args['all']):
             for file in files:
-                filepath = subdir + os.sep + file
+                filepath = os.path.join(subdir, file)
                 if filepath.endswith('.jpg'):
                     print(filepath)
                     actions[args['action']](filepath)
