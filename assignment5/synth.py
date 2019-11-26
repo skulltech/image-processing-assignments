@@ -42,7 +42,7 @@ def neighborhood(g, l, nsizes, i, j):
 
 
 def nps(image):
-    levels = 3
+    levels = 4
     nsizes = [(3, 1), (5, 2), (7, 2), (9, 2)]
     image = Image.open(image)
     image = np.array(image) / 255
@@ -92,10 +92,11 @@ def rpn(image):
     synthetic = radii * np.exp(1j * random_phase)
     synthetic = np.fft.ifft2(synthetic)
     synthetic = np.abs(synthetic).astype(np.uint8)
+    stacked = np.hstack((image, synthetic))
 
-    cv2.imshow('RPN Texture Synthesis', np.hstack((image, synthetic)))
+    cv2.imshow('RPN Texture Synthesis', stacked)
     cv2.waitKey(0)
-    return synthetic
+    return stacked
 
 
 def main():
@@ -119,9 +120,11 @@ def main():
                 filepath = os.path.join(subdir, file)
                 if filepath.endswith('.jpg') or filepath.endswith('.gif'):
                     print(filepath)
-                    actions[args['action']](filepath)
+                    output = actions[args['action']](filepath)
+                    cv2.imwrite('output_' + filepath.split('/')[-1] + '.jpg', output)
     else:
-        actions[args['action']](args['image'])
+        output = actions[args['action']](args['image'])
+        cv2.imwrite('output_' + args['image'].split('/')[-1] + '.jpg', output)
 
 
 if __name__ == '__main__':
